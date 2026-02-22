@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Dolphin Grand Prix</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:       #050c17;
+      --surface:  #0b1728;
+      --card:     #0f1e34;
+      --border:   #1a3052;
+      --text:     #c8e0f8;
+      --dim:      #3a5c7a;
+      --bright:   #e8f6ff;
+      --gold:     #e8a800;
+      --silver:   #8ab0cc;
+      --bronze:   #c46e30;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Outfit', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+      touch-action: manipulation;
+    }
+
+    /* ── SCREENS ── */
+    .screen { display: none; height: 100dvh; flex-direction: column; overflow: hidden; }
+    .screen.active { display: flex; }
+
+    /* ─────────────────────────────────────────
+       PREDICT SCREEN
+    ───────────────────────────────────────── */
+    .ph {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0.875rem 1rem 0.75rem;
+      flex-shrink: 0;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+    }
+
+    .ph-left {}
+    .event-label {
+      font-size: 0.52rem;
+      font-weight: 700;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-bottom: 0.1rem;
+    }
+    .event-title {
+      font-family: 'Antonio', system-ui;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--bright);
+      line-height: 1;
+      letter-spacing: 0.02em;
+    }
+    .event-title em {
+      color: var(--gold);
+      font-style: normal;
+    }
+    .ph-right {
+      text-align: right;
+    }
+    .event-heat {
+      font-size: 0.58rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      color: var(--dim);
+      text-transform: uppercase;
+    }
+
+    /* Picker row */
+    .picker-zone {
+      padding: 0.625rem 0.875rem;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .name-input {
+      flex: 1;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--bright);
+      font-family: 'Outfit', system-ui;
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 0.55rem 0.75rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .name-input::placeholder { color: var(--dim); }
+    .name-input:focus { border-color: var(--gold); }
+    .btn-add {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      cursor: pointer;
+      font-family: 'Outfit', system-ui;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      padding: 0.55rem 0.875rem;
+      transition: border-color 0.15s, color 0.15s;
+      white-space: nowrap;
+      text-transform: uppercase;
+    }
+    .btn-add:hover { border-color: var(--gold); color: var(--gold); }
+
+    /* Dolphin grid */
+    .d-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.625rem;
+      padding: 0.625rem 0.75rem;
+      flex: 1;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+
+    .d-card {
+      background: var(--card);
+      border: 2px solid var(--border);
+      cursor: pointer;
+      transition: border-color 0.12s, transform 0.1s;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    .d-card:active { transform: scale(0.97); }
+    .d-card.picked { border-color: var(--c); box-shadow: inset 0 0 0 1px var(--c); }
+
+    .card-stripe { height: 4px; width: 100%; background: var(--c); flex-shrink: 0; }
+    .card-inner { padding: 0.625rem 0.75rem 0.625rem; display: flex; flex-direction: column; flex: 1; }
+
+    .card-canvas-wrap {
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.35rem;
+    }
+    .card-canvas-wrap canvas { display: block; }
+
+    .card-name {
+      font-family: 'Antonio', system-ui;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--c);
+      letter-spacing: 0.05em;
+      margin-bottom: 0.2rem;
+    }
+    .card-hint {
+      font-size: 0.52rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+    .card-badges {
+      margin-top: 0.375rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.2rem;
+      min-height: 1.5rem;
+    }
+    .badge {
+      font-size: 0.58rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      color: #fff;
+      letter-spacing: 0.04em;
+      background: var(--c);
+    }
+    .selected-check {
+      position: absolute;
+      top: 0.35rem;
+      right: 0.35rem;
+      width: 20px;
+      height: 20px;
+      background: var(--c);
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .d-card.picked .selected-check { display: flex; }
+
+    /* Footer */
+    .predict-foot {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 0.625rem 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-shrink: 0;
+    }
+    .bet-count { font-size: 0.7rem; color: var(--dim); flex: 1; }
+    .btn-start {
+      background: var(--gold);
+      border: none;
+      color: #000;
+      cursor: pointer;
+      font-family: 'Antonio', system-ui;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      padding: 0.75rem 2rem;
+      text-transform: uppercase;
+      transition: opacity 0.15s;
+    }
+    .btn-start:disabled { opacity: 0.25; pointer-events: none; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      background: #c0392b;
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      padding: 0.5rem 1.25rem;
+      text-transform: uppercase;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+      z-index: 200;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ─────────────────────────────────────────
+       COUNTDOWN OVERLAY
+    ───────────────────────────────────────── */
+    .countdown {
+      position: fixed; inset: 0;
+      background: rgba(5,12,23,0.96);
+      display: none; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 100;
+    }
+    .countdown.active { display: flex; }
+    .countdown-n {
+      font-family: 'Antonio', system-ui;
+      font-size: min(35vw, 180px);
+      font-weight: 700;
+      color: var(--gold);
+      line-height: 1;
+      letter-spacing: -0.03em;
+      transition: transform 0.15s;
+    }
+    .countdown-n.pop { transform: scale(1.15); }
+    .countdown-sub {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.45em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-top: 0.75rem;
+    }
+
+    /* ─────────────────────────────────────────
+       RACE SCREEN
+    ───────────────────────────────────────── */
+    .race-top {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0.6rem 1rem;
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .race-label {
+      font-size: 0.52rem;
+      font-weight: 700;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+    .race-timer {
+      font-family: 'Antonio', system-ui;
+      font-size: 2.2rem;
+      font-weight: 400;
+      color: var(--bright);
+      letter-spacing: 0.04em;
+      font-variant-numeric: tabular-nums;
+      margin-left: auto;
+      line-height: 1;
+    }
+    .race-timer span { font-size: 1.1rem; color: var(--dim); }
+
+    .race-canvas-area {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    #race-canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .standings-bar {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 0.4rem 0.875rem;
+      display: flex;
+      gap: 0.875rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+      flex-shrink: 0;
+    }
+    .standings-bar::-webkit-scrollbar { display: none; }
+    .st-chip { display: flex; align-items: center; gap: 0.3rem; flex-shrink: 0; }
+    .st-pos { font-size: 0.55rem; font-weight: 700; color: var(--dim); width: 14px; }
+    .st-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .st-name { font-size: 0.68rem; font-weight: 600; color: var(--text); }
+
+    /* ─────────────────────────────────────────
+       RESULTS SCREEN
+    ───────────────────────────────────────── */
+    .results-top {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0.875rem 1rem;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .results-label {
+      font-size: 0.52rem;
+      font-weight: 700;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-bottom: 0.2rem;
+    }
+    .results-winner {
+      font-family: 'Antonio', system-ui;
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--bright);
+      line-height: 1;
+    }
+    .results-time {
+      font-size: 0.65rem;
+      color: var(--dim);
+      margin-top: 0.25rem;
+    }
+
+    /* Podium */
+    .podium-area {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      padding: 1rem 1.5rem 0;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+    .podium-col {
+      flex: 1;
+      max-width: 110px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .podium-dolphin { margin-bottom: 0.5rem; }
+    .podium-dolphin canvas { display: block; }
+    .podium-dname {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 0.375rem;
+      line-height: 1.2;
+    }
+    .podium-block {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 0.1rem;
+    }
+    .podium-rank {
+      font-family: 'Antonio', system-ui;
+      font-size: 1.6rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .podium-medal {
+      font-size: 0.5rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      opacity: 0.7;
+    }
+
+    .p1 .podium-block { height: 84px; background: var(--gold); color: #000; }
+    .p2 .podium-block { height: 60px; background: var(--silver); color: #000; }
+    .p3 .podium-block { height: 44px; background: var(--bronze); color: #fff; }
+
+    /* Bet results */
+    .bets-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.75rem 0.875rem;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .bets-label {
+      font-size: 0.52rem;
+      font-weight: 700;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-bottom: 0.625rem;
+    }
+    .bet-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .bet-row:last-child { border-bottom: none; }
+    .bet-color { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .bet-name { font-size: 0.82rem; font-weight: 600; flex: 1; color: var(--bright); }
+    .bet-pick { font-size: 0.68rem; color: var(--dim); }
+    .bet-result {
+      font-family: 'Antonio', system-ui;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+    }
+    .r-win    { color: var(--gold); }
+    .r-place  { color: var(--silver); }
+    .r-show   { color: var(--bronze); }
+    .r-loss   { color: var(--dim); }
+
+    .results-foot {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 0.75rem 0.875rem;
+      flex-shrink: 0;
+    }
+    .btn-again {
+      background: var(--gold);
+      border: none;
+      color: #000;
+      cursor: pointer;
+      font-family: 'Antonio', system-ui;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      padding: 0.875rem;
+      text-transform: uppercase;
+      width: 100%;
+      transition: opacity 0.15s;
+    }
+    .btn-again:hover { opacity: 0.88; }
+
+    /* ── CONFETTI ── */
+    #confetti-canvas {
+      position: fixed; inset: 0;
+      pointer-events: none;
+      z-index: 40;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="confetti-canvas"></canvas>
+<div class="toast" id="toast"></div>
+
+<!-- ─── COUNTDOWN ─── -->
+<div class="countdown" id="countdown">
+  <div class="countdown-n" id="cdn">3</div>
+  <div class="countdown-sub" id="cdn-sub">Get Ready</div>
+</div>
+
+<!-- ─── SCREEN: PREDICT ─── -->
+<div class="screen active" id="s-predict">
+  <div class="ph">
+    <div class="ph-left">
+      <div class="event-label">Olympic Series 2026</div>
+      <div class="event-title">Dolphin <em>Grand Prix</em></div>
+    </div>
+    <div class="ph-right">
+      <div class="event-heat">Heat 7 of 12</div>
+    </div>
+  </div>
+  <div class="picker-zone">
+    <input class="name-input" id="name-input" type="text" placeholder="Enter your name..." maxlength="18" autocomplete="off" autocorrect="off" spellcheck="false">
+    <button class="btn-add" id="btn-add" onclick="addBet()">+ Bet</button>
+  </div>
+  <div class="d-grid" id="d-grid"></div>
+  <div class="predict-foot">
+    <div class="bet-count" id="bet-count">Select a dolphin, then + Bet</div>
+    <button class="btn-start" id="btn-start" onclick="beginCountdown()" disabled>Start Race</button>
+  </div>
+</div>
+
+<!-- ─── SCREEN: RACE ─── -->
+<div class="screen" id="s-race">
+  <div class="race-top">
+    <div class="race-label">Dolphin Grand Prix — Heat 7</div>
+    <div class="race-timer" id="race-timer">0<span>.00</span></div>
+  </div>
+  <div class="race-canvas-area">
+    <canvas id="race-canvas"></canvas>
+  </div>
+  <div class="standings-bar" id="standings-bar"></div>
+</div>
+
+<!-- ─── SCREEN: RESULTS ─── -->
+<div class="screen" id="s-results">
+  <div class="results-top">
+    <div class="results-label">Race Complete</div>
+    <div class="results-winner" id="results-winner">—</div>
+    <div class="results-time" id="results-time"></div>
+  </div>
+  <div class="podium-area" id="podium"></div>
+  <div class="bets-area">
+    <div class="bets-label">Predictions</div>
+    <div id="bet-results"></div>
+  </div>
+  <div class="results-foot">
+    <button class="btn-again" onclick="resetAll()">Race Again</button>
+  </div>
+</div>
+
+<script>
+(function () {
+
+  // ── DOLPHIN DATA ──
+  const DOLPHINS = [
+    { id: 0, name: 'SPLASH',  color: '#2979ff', dark: '#1a50cc' },
+    { id: 1, name: 'TORPEDO', color: '#e53935', dark: '#b01010' },
+    { id: 2, name: 'SONIC',   color: '#e8a800', dark: '#b07800' },
+    { id: 3, name: 'PEARL',   color: '#e91e9c', dark: '#a80068' },
+    { id: 4, name: 'THUNDER', color: '#7c4dff', dark: '#5230c8' },
+    { id: 5, name: 'GLACIER', color: '#00b8d4', dark: '#007c90' },
+  ];
+
+  let bets = [];           // [{name, dolphinId}]
+  let selectedDolphin = null;
+
+  // ── DOLPHIN SHAPE ──
+  // Normalized: dolphin facing right, body center at (0,0).
+  // Total size ~88w × 50h units. Eye at (~28, -7).
+  function dolphinPath(ctx, s) {
+    ctx.beginPath();
+    ctx.moveTo(40*s, 0);
+    // Upper snout → head
+    ctx.bezierCurveTo(36*s,-7*s, 26*s,-13*s, 14*s,-13*s);
+    // Head to dorsal fin base
+    ctx.bezierCurveTo(8*s,-13*s, 4*s,-14*s, 2*s,-14*s);
+    // Dorsal fin up
+    ctx.bezierCurveTo(4*s,-22*s, 10*s,-31*s, 14*s,-30*s);
+    // Dorsal fin back down
+    ctx.bezierCurveTo(18*s,-29*s, 18*s,-18*s, 18*s,-13*s);
+    // Back toward tail
+    ctx.bezierCurveTo(12*s,-12*s, -8*s,-9*s, -30*s,-4*s);
+    // Upper fluke out
+    ctx.bezierCurveTo(-34*s,-5*s, -40*s,-12*s, -46*s,-20*s);
+    // Upper fluke back in
+    ctx.bezierCurveTo(-44*s,-12*s, -42*s,-5*s, -38*s,-2*s);
+    // Tail notch
+    ctx.lineTo(-38*s, 2*s);
+    // Lower fluke out
+    ctx.bezierCurveTo(-42*s,5*s, -44*s,12*s, -46*s,20*s);
+    // Lower fluke back in
+    ctx.bezierCurveTo(-40*s,12*s, -34*s,5*s, -30*s,4*s);
+    // Belly back
+    ctx.bezierCurveTo(-8*s,10*s, 8*s,13*s, 20*s,13*s);
+    // Belly front to snout
+    ctx.bezierCurveTo(30*s,12*s, 37*s,6*s, 40*s,0);
+    ctx.closePath();
+  }
+
+  function drawDolphin(ctx, cx, cy, s, color) {
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    // Drop shadow
+    ctx.shadowColor = 'rgba(0,0,0,0.45)';
+    ctx.shadowBlur = 6;
+    ctx.shadowOffsetY = 3;
+
+    // Body
+    ctx.fillStyle = color;
+    dolphinPath(ctx, s);
+    ctx.fill();
+
+    ctx.shadowColor = 'transparent';
+
+    // Belly sheen (lighter ellipse)
+    ctx.fillStyle = 'rgba(255,255,255,0.16)';
+    ctx.beginPath();
+    ctx.ellipse(6*s, 3*s, 20*s, 6.5*s, -0.1, 0, Math.PI*2);
+    ctx.fill();
+
+    // Dorsal fin highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.09)';
+    ctx.beginPath();
+    ctx.ellipse(12*s, -20*s, 4*s, 6*s, 0.3, 0, Math.PI*2);
+    ctx.fill();
+
+    // Eye white
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(27*s, -7*s, 3.2*s, 0, Math.PI*2);
+    ctx.fill();
+
+    // Pupil
+    ctx.fillStyle = '#0f1b2d';
+    ctx.beginPath();
+    ctx.arc(27.5*s, -6.5*s, 2*s, 0, Math.PI*2);
+    ctx.fill();
+
+    // Eye shine
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.beginPath();
+    ctx.arc(26.5*s, -7.5*s, 0.75*s, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  // ── BUILD PREDICTION CARDS ──
+  const grid = document.getElementById('d-grid');
+
+  DOLPHINS.forEach(d => {
+    const card = document.createElement('div');
+    card.className = 'd-card';
+    card.id = 'dc-' + d.id;
+    card.style.setProperty('--c', d.color);
+    card.innerHTML = `
+      <div class="card-stripe"></div>
+      <div class="card-inner">
+        <div class="card-canvas-wrap">
+          <canvas id="cc-${d.id}" width="104" height="46"></canvas>
+        </div>
+        <div class="card-name">${d.name}</div>
+        <div class="card-hint">Tap to select</div>
+        <div class="card-badges" id="cb-${d.id}"></div>
+      </div>
+      <div class="selected-check">
+        <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+          <path d="M1 4.5 L4 7.5 L10 1" stroke="#000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    `;
+    card.addEventListener('click', () => pickCard(d.id));
+    grid.appendChild(card);
+
+    // Draw mini dolphin
+    const cc = document.getElementById('cc-' + d.id);
+    const cx2 = cc.getContext('2d');
+    drawDolphin(cx2, 52, 30, 0.88, d.color);
+  });
+
+  function pickCard(id) {
+    DOLPHINS.forEach(d => document.getElementById('dc-' + d.id).classList.remove('picked'));
+    selectedDolphin = id;
+    document.getElementById('dc-' + id).classList.add('picked');
+    document.getElementById('name-input').focus();
+  }
+
+  window.addBet = function () {
+    const nameEl = document.getElementById('name-input');
+    const raw = nameEl.value.trim();
+    if (!raw) { nameEl.focus(); showToast('Enter your name first'); return; }
+    if (selectedDolphin === null) { showToast('Select a dolphin first'); return; }
+
+    bets.push({ name: raw, dolphinId: selectedDolphin });
+
+    // Add badge to card
+    const badge = document.createElement('div');
+    badge.className = 'badge';
+    badge.style.setProperty('--c', DOLPHINS[selectedDolphin].color);
+    badge.style.background = DOLPHINS[selectedDolphin].color;
+    badge.textContent = raw;
+    document.getElementById('cb-' + selectedDolphin).appendChild(badge);
+
+    // Reset
+    nameEl.value = '';
+    selectedDolphin = null;
+    DOLPHINS.forEach(d => document.getElementById('dc-' + d.id).classList.remove('picked'));
+
+    // Update footer
+    const n = bets.length;
+    document.getElementById('bet-count').textContent = n === 1 ? '1 bet placed' : `${n} bets placed`;
+    document.getElementById('btn-start').disabled = false;
+    nameEl.focus();
+  };
+
+  document.getElementById('name-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') window.addBet();
+  });
+
+  // ── TOAST ──
+  let toastTimer = null;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  // ─────────────────────────────────────────
+  // COUNTDOWN
+  // ─────────────────────────────────────────
+  window.beginCountdown = function () {
+    document.getElementById('s-predict').classList.remove('active');
+    document.getElementById('s-race').classList.add('active');
+    sizeRaceCanvas();
+
+    const overlay = document.getElementById('countdown');
+    const nEl = document.getElementById('cdn');
+    const subEl = document.getElementById('cdn-sub');
+    overlay.classList.add('active');
+
+    let n = 3;
+    nEl.textContent = n;
+    subEl.textContent = 'Get Ready';
+
+    const tick = setInterval(() => {
+      n--;
+      nEl.classList.remove('pop');
+      void nEl.offsetWidth; // reflow
+      nEl.classList.add('pop');
+      if (n > 0) {
+        nEl.textContent = n;
+      } else {
+        nEl.textContent = 'GO!';
+        subEl.textContent = '';
+        clearInterval(tick);
+        setTimeout(() => {
+          overlay.classList.remove('active');
+          startRace();
+        }, 550);
+      }
+    }, 850);
+  };
+
+  // ─────────────────────────────────────────
+  // RACE
+  // ─────────────────────────────────────────
+  const raceCanvas = document.getElementById('race-canvas');
+  const raceCtx = raceCanvas.getContext('2d');
+
+  let RS = {}; // race state
+
+  function sizeRaceCanvas() {
+    const area = raceCanvas.parentElement;
+    raceCanvas.width = area.clientWidth;
+    raceCanvas.height = area.clientHeight;
+  }
+
+  function startRace() {
+    const cw = raceCanvas.width, ch = raceCanvas.height;
+    const LANE_H = ch / 6;
+    const START_X = cw * 0.12;
+    const FINISH_X = cw - FINISH_W;
+    const FINISH_W = 28;
+    const DS = LANE_H / 90; // dolphin scale
+
+    RS = {
+      dolphins: DOLPHINS.map((d, i) => ({
+        ...d,
+        x: START_X,
+        laneY: LANE_H * i + LANE_H / 2,
+        speed: 2.2 + Math.random() * 1.8,
+        minSpeed: 1.4,
+        maxSpeed: 5.8,
+        bob: Math.random() * Math.PI * 2,
+        bobSpeed: 0.055 + Math.random() * 0.03,
+        bobAmp: LANE_H * 0.11,
+        wake: [],
+        finished: false,
+        finishTime: null,
+        rank: null,
+      })),
+      startTime: null,
+      elapsed: 0,
+      done: false,
+      finishOrder: [],
+      LANE_H, START_X, FINISH_X, FINISH_W, DS, cw, ch,
+      raf: null,
+    };
+
+    RS.startTime = performance.now();
+    RS.raf = requestAnimationFrame(raceLoop);
+  }
+
+  function raceLoop(ts) {
+    RS.elapsed = (ts - RS.startTime) / 1000;
+
+    // Update timer display
+    const s = Math.floor(RS.elapsed);
+    const ms = Math.floor((RS.elapsed % 1) * 100).toString().padStart(2, '0');
+    document.getElementById('race-timer').innerHTML = `${s}<span>.${ms}</span>`;
+
+    // Move dolphins
+    RS.dolphins.forEach(d => {
+      if (d.finished) return;
+      d.speed += (Math.random() - 0.475) * 0.38;
+      if (Math.random() < 0.008) d.speed = d.maxSpeed * 0.9; // burst
+      d.speed = Math.max(d.minSpeed, Math.min(d.maxSpeed, d.speed));
+      d.x += d.speed;
+      d.bob += d.bobSpeed;
+      d.wake.push({ x: d.x, y: d.y || d.laneY });
+      if (d.wake.length > 28) d.wake.shift();
+
+      if (d.x >= RS.FINISH_X) {
+        d.finished = true;
+        d.finishTime = RS.elapsed;
+        RS.finishOrder.push(d.id);
+        if (RS.finishOrder.length === 1) {
+          setTimeout(() => { RS.done = true; setTimeout(showResults, 400); }, 1600);
+        }
+      }
+    });
+
+    // Sort by position
+    const sorted = [...RS.dolphins].sort((a, b) => {
+      if (a.finished && b.finished) return a.finishTime - b.finishTime;
+      if (a.finished) return -1;
+      if (b.finished) return 1;
+      return b.x - a.x;
+    });
+
+    // Update standings
+    document.getElementById('standings-bar').innerHTML = sorted.map((d, i) => `
+      <div class="st-chip">
+        <div class="st-pos">${i+1}.</div>
+        <div class="st-dot" style="background:${d.color}"></div>
+        <div class="st-name">${d.name}</div>
+      </div>
+    `).join('');
+
+    drawRaceFrame(sorted);
+
+    if (!RS.done) RS.raf = requestAnimationFrame(raceLoop);
+  }
+
+  function drawRaceFrame(sorted) {
+    const { dolphins, LANE_H, FINISH_X, FINISH_W, DS, cw, ch } = RS;
+    raceCtx.clearRect(0, 0, cw, ch);
+
+    // Lane backgrounds
+    DOLPHINS.forEach((d, i) => {
+      // Alternating lane shade
+      raceCtx.fillStyle = i % 2 === 0 ? '#080f1c' : '#0a1626';
+      raceCtx.fillRect(0, i * LANE_H, cw, LANE_H);
+
+      // Lane separator
+      raceCtx.strokeStyle = '#1a3052';
+      raceCtx.lineWidth = 1;
+      raceCtx.beginPath();
+      raceCtx.moveTo(0, i * LANE_H);
+      raceCtx.lineTo(cw, i * LANE_H);
+      raceCtx.stroke();
+
+      // Lane number
+      const numSize = Math.max(14, LANE_H * 0.32);
+      raceCtx.font = `700 ${numSize}px Antonio, system-ui`;
+      raceCtx.fillStyle = '#1a3052';
+      raceCtx.textAlign = 'right';
+      raceCtx.textBaseline = 'middle';
+      raceCtx.fillText(i + 1, 22, i * LANE_H + LANE_H / 2);
+
+      // Dolphin name (left gutter)
+      const nameSize = Math.max(8, LANE_H * 0.13);
+      raceCtx.font = `600 ${nameSize}px Outfit, system-ui`;
+      raceCtx.fillStyle = '#233c58';
+      raceCtx.textAlign = 'left';
+      raceCtx.fillText(d.name, 26, i * LANE_H + LANE_H / 2);
+    });
+
+    // Subtle water ripples across all lanes
+    raceCtx.strokeStyle = 'rgba(40,100,160,0.07)';
+    raceCtx.lineWidth = 1;
+    const ripplePhase = (RS.elapsed * 40) % (LANE_H * 0.5);
+    for (let ry = 0; ry < ch; ry += LANE_H * 0.5) {
+      raceCtx.beginPath();
+      for (let rx = 0; rx < cw; rx += 30) {
+        raceCtx.moveTo(rx, ry + ripplePhase);
+        raceCtx.quadraticCurveTo(rx + 10, ry + ripplePhase - 3, rx + 20, ry + ripplePhase);
+      }
+      raceCtx.stroke();
+    }
+
+    // Finish line (black/white stripes)
+    const stripeH = 9;
+    for (let fy = 0; fy < ch; fy += stripeH * 2) {
+      raceCtx.fillStyle = '#ffffff';
+      raceCtx.fillRect(FINISH_X, fy, FINISH_W, stripeH);
+      raceCtx.fillStyle = '#0a1220';
+      raceCtx.fillRect(FINISH_X, fy + stripeH, FINISH_W, stripeH);
+    }
+    raceCtx.strokeStyle = 'rgba(255,255,255,0.5)';
+    raceCtx.lineWidth = 1.5;
+    raceCtx.beginPath();
+    raceCtx.moveTo(FINISH_X, 0);
+    raceCtx.lineTo(FINISH_X, ch);
+    raceCtx.stroke();
+    // "FINISH" label
+    raceCtx.save();
+    raceCtx.translate(FINISH_X + FINISH_W / 2, ch / 2);
+    raceCtx.rotate(-Math.PI / 2);
+    raceCtx.font = `700 ${Math.max(9, LANE_H * 0.13)}px Antonio, system-ui`;
+    raceCtx.fillStyle = 'rgba(200,220,255,0.5)';
+    raceCtx.textAlign = 'center';
+    raceCtx.textBaseline = 'middle';
+    raceCtx.fillText('FINISH', 0, 0);
+    raceCtx.restore();
+
+    // Dolphins
+    dolphins.forEach(d => {
+      const bobOffset = d.finished ? 0 : Math.sin(d.bob) * d.bobAmp;
+      const drawY = d.laneY + bobOffset;
+
+      // Wake trail
+      d.wake.forEach((w, wi) => {
+        const alpha = (wi / d.wake.length) * 0.22;
+        raceCtx.fillStyle = hexRgba(d.color, alpha);
+        const r = 4 + wi * 0.25;
+        raceCtx.beginPath();
+        raceCtx.ellipse(w.x - 14, w.y + Math.sin(d.bob - wi * 0.3) * d.bobAmp * 0.5, r, r * 0.55, 0, 0, Math.PI * 2);
+        raceCtx.fill();
+      });
+
+      // Podium rank badge (after finish)
+      if (d.rank !== null) {
+        const bx = FINISH_X + FINISH_W + 4;
+        const by = d.laneY;
+        const bsize = Math.max(14, LANE_H * 0.28);
+        raceCtx.fillStyle = d.rank === 1 ? '#e8a800' : d.rank === 2 ? '#8ab0cc' : '#c46e30';
+        raceCtx.fillRect(bx, by - bsize * 0.5, bsize, bsize);
+        raceCtx.fillStyle = d.rank === 3 ? '#fff' : '#000';
+        raceCtx.font = `700 ${bsize * 0.65}px Antonio, system-ui`;
+        raceCtx.textAlign = 'center';
+        raceCtx.textBaseline = 'middle';
+        raceCtx.fillText(d.rank, bx + bsize / 2, by);
+      }
+
+      drawDolphin(raceCtx, d.x, drawY, DS, d.color);
+    });
+
+    // Assign ranks
+    RS.finishOrder.forEach((id, i) => {
+      const d = RS.dolphins.find(x => x.id === id);
+      if (d && d.rank === null) d.rank = i + 1;
+    });
+  }
+
+  function hexRgba(hex, a) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r},${g},${b},${a})`;
+  }
+
+  // ─────────────────────────────────────────
+  // RESULTS
+  // ─────────────────────────────────────────
+  function showResults() {
+    cancelAnimationFrame(RS.raf);
+
+    // Complete finish order with unfinished dolphins by position
+    const unfinished = RS.dolphins.filter(d => !d.finished).sort((a, b) => b.x - a.x);
+    const fullOrder = [...RS.finishOrder, ...unfinished.map(d => d.id)];
+
+    document.getElementById('s-race').classList.remove('active');
+    document.getElementById('s-results').classList.add('active');
+
+    const winner = DOLPHINS[fullOrder[0]];
+    const winTime = RS.dolphins.find(d => d.id === fullOrder[0])?.finishTime;
+    document.getElementById('results-winner').innerHTML =
+      `<span style="color:${winner.color}">${winner.name}</span> Wins`;
+    document.getElementById('results-time').textContent =
+      winTime ? `Finish time: ${winTime.toFixed(2)}s` : '';
+
+    // Podium
+    const podiumEl = document.getElementById('podium');
+    const order = [
+      { rank: 2, id: fullOrder[1] },
+      { rank: 1, id: fullOrder[0] },
+      { rank: 3, id: fullOrder[2] },
+    ];
+    podiumEl.innerHTML = order.map(p => {
+      const d = DOLPHINS[p.id];
+      const medals = ['', 'GOLD', 'SILVER', 'BRONZE'];
+      return `
+        <div class="podium-col p${p.rank}">
+          <div class="podium-dolphin">
+            <canvas id="pc-${p.rank}" width="90" height="42"></canvas>
+          </div>
+          <div class="podium-dname" style="color:${d.color}">${d.name}</div>
+          <div class="podium-block">
+            <div class="podium-rank">${p.rank}</div>
+            <div class="podium-medal">${medals[p.rank]}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    order.forEach(p => {
+      const d = DOLPHINS[p.id];
+      const pc = document.getElementById('pc-' + p.rank);
+      const pctx = pc.getContext('2d');
+      drawDolphin(pctx, 45, 28, 0.82, d.color);
+    });
+
+    // Bet results
+    const betEl = document.getElementById('bet-results');
+    if (bets.length === 0) {
+      betEl.innerHTML = '<div style="color:var(--dim);font-size:0.75rem;padding:0.5rem 0">No predictions were placed.</div>';
+    } else {
+      betEl.innerHTML = bets.map(b => {
+        const d = DOLPHINS[b.dolphinId];
+        const rank = fullOrder.indexOf(b.dolphinId) + 1;
+        const [cls, lbl] = rank === 1 ? ['r-win', 'WIN'] :
+                           rank === 2 ? ['r-place', '2ND'] :
+                           rank === 3 ? ['r-show', '3RD'] :
+                           ['r-loss', `${rank}TH`];
+        return `
+          <div class="bet-row">
+            <div class="bet-color" style="background:${d.color}"></div>
+            <div class="bet-name">${b.name}</div>
+            <div class="bet-pick">${d.name}</div>
+            <div class="bet-result ${cls}">${lbl}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    launchConfetti();
+  }
+
+  // ─────────────────────────────────────────
+  // RESET
+  // ─────────────────────────────────────────
+  window.resetAll = function () {
+    bets = [];
+    selectedDolphin = null;
+    document.getElementById('bet-count').textContent = 'Select a dolphin, then + Bet';
+    document.getElementById('btn-start').disabled = true;
+    document.getElementById('name-input').value = '';
+    DOLPHINS.forEach(d => {
+      document.getElementById('dc-' + d.id).classList.remove('picked');
+      document.getElementById('cb-' + d.id).innerHTML = '';
+    });
+    stopConfetti();
+    document.getElementById('s-results').classList.remove('active');
+    document.getElementById('s-predict').classList.add('active');
+  };
+
+  // ─────────────────────────────────────────
+  // CONFETTI
+  // ─────────────────────────────────────────
+  const cc = document.getElementById('confetti-canvas');
+  const cctx = cc.getContext('2d');
+  let pieces = [];
+  let craf = null;
+
+  function launchConfetti() {
+    cc.width = window.innerWidth;
+    cc.height = window.innerHeight;
+    const colors = ['#e8a800','#2979ff','#e53935','#e91e9c','#7c4dff','#00b8d4','#ffffff','#a8d8a8'];
+    pieces = Array.from({ length: 100 }, () => ({
+      x: Math.random() * cc.width,
+      y: -20 - Math.random() * 120,
+      w: 5 + Math.random() * 7,
+      h: 3 + Math.random() * 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      rot: Math.random() * Math.PI * 2,
+      rs: (Math.random() - 0.5) * 0.14,
+      vx: (Math.random() - 0.5) * 2.2,
+      vy: 2.5 + Math.random() * 3.5,
+    }));
+    if (craf) cancelAnimationFrame(craf);
+    animateConfetti();
+  }
+
+  function animateConfetti() {
+    cctx.clearRect(0, 0, cc.width, cc.height);
+    pieces = pieces.filter(p => p.y < cc.height + 20);
+    pieces.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.vy += 0.045; p.rot += p.rs;
+      cctx.save();
+      cctx.translate(p.x, p.y);
+      cctx.rotate(p.rot);
+      cctx.fillStyle = p.color;
+      cctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      cctx.restore();
+    });
+    if (pieces.length > 0) craf = requestAnimationFrame(animateConfetti);
+  }
+
+  function stopConfetti() {
+    if (craf) cancelAnimationFrame(craf);
+    cctx.clearRect(0, 0, cc.width, cc.height);
+    pieces = [];
+  }
+
+})();
+</script>
+</body>
+</html>
