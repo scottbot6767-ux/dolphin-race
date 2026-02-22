@@ -736,7 +736,8 @@
   window.beginCountdown = function () {
     document.getElementById('s-predict').classList.remove('active');
     document.getElementById('s-race').classList.add('active');
-    sizeRaceCanvas();
+    // Wait one frame so the race screen layout is painted before we read clientWidth/Height
+    requestAnimationFrame(() => { requestAnimationFrame(sizeRaceCanvas); });
 
     const overlay = document.getElementById('countdown');
     const nEl = document.getElementById('cdn');
@@ -784,8 +785,8 @@
     const cw = raceCanvas.width, ch = raceCanvas.height;
     const LANE_H = ch / 6;
     const START_X = cw * 0.12;
-    const FINISH_X = cw - FINISH_W;
     const FINISH_W = 28;
+    const FINISH_X = cw - FINISH_W;
     const DS = LANE_H / 90; // dolphin scale
 
     RS = {
